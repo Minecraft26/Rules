@@ -370,26 +370,31 @@
             let currentPage = 1;
             let totalPages = 1;
             let currentCategoryData = null;
+            let currentMainCategory = ''; // Added
 
             // Function to generate and display rule items for the current page
-            function renderRulesForPage(categoryData) { // Added categoryData parameter
+            function renderRulesForPage(groupsData) { // Changed parameter name to groupsData
                 dynamicRulesContent.innerHTML = '';
-                if (!categoryData || !categoryData.rules || !Array.isArray(categoryData.rules)) {
-                    dynamicRulesContent.innerHTML = `<p class="error-message">Invalid rule data for this category.</p>`;
+                if (!groupsData || !Array.isArray(groupsData)) {
+                    dynamicRulesContent.innerHTML = `<p class="error-message">Invalid rule data for this category (expected an array of groups).</p>`;
                     return;
                 }
 
-                // Filter rules for the current page
-                const rulesToRender = categoryData.rules.filter(rule => rule.page === currentPage);
+                let rulesToRender = [];
+                groupsData.forEach(group => {
+                    if (group.rules && Array.isArray(group.rules)) {
+                        rulesToRender = rulesToRender.concat(group.rules.filter(rule => rule.page === currentPage));
+                    }
+                });
                 
                 if (rulesToRender.length === 0) {
                     dynamicRulesContent.innerHTML = `<p class="error-message">No rules found for this page.</p>`;
                     return;
                 }
 
-                // Create and append a header for the category
+                // Create and append a header for the category (using the first group's title for simplicity, or you can adjust)
                 const header = document.createElement('div');
-                header.innerHTML = `<h2 class="rules-header">Page ${currentPage} of ${totalPages} - ${categoryData.title}</h2>`;
+                header.innerHTML = `<h2 class="rules-header">Page ${currentPage} of ${totalPages} - ${groupsData[0].title}</h2>`; // Using first group's title
                 dynamicRulesContent.appendChild(header);
 
                 // Create and append each rule item
@@ -478,22 +483,25 @@
                     }
                     
                     currentCategoryId = targetId;
+                    currentMainCategory = category; // Store the main category
                     controlsContainer.classList.add('hidden'); // Hide controls while loading
                     rulesPageView.classList.add('hidden'); // Hide rules view while loading
                     dynamicRulesContent.innerHTML = '<p class="loading">Loading rules...</p>'; // Show loading message
 
                     const fetchedData = await fetchRules(targetId); // Fetch data
 
-                    if (fetchedData && fetchedData.rules && Array.isArray(fetchedData.rules)) { // Added check for fetchedData.rules
-                        currentCategoryData = fetchedData; 
-                        const pageNumbers = new Set(currentCategoryData.rules.map(rule => rule.page));
+                    if (fetchedData && Array.isArray(fetchedData)) { // Check if fetchedData is an array
+                        currentCategoryData = fetchedData; // Store the array of groups
+                        // Calculate totalPages based on all rules across all groups
+                        const allRules = fetchedData.flatMap(group => group.rules || []);
+                        const pageNumbers = new Set(allRules.map(rule => rule.page));
                         totalPages = pageNumbers.size;
                         currentPage = 1;
-                        renderRulesForPage(currentCategoryData); // Pass fetched data
+                        renderRulesForPage(currentCategoryData); // Pass the array of groups
                         controlsContainer.classList.remove('hidden');
                         rulesPageView.classList.remove('hidden');
                     } else {
-                        dynamicRulesContent.innerHTML = `<p class="error-message">Failed to load rules for this category. The JSON file might be missing, have an incorrect structure, or contain no rules.</p>`;
+                        dynamicRulesContent.innerHTML = `<p class="error-message">Failed to load rules for this category. The JSON file might be missing, have an incorrect structure (expected an array of rule groups), or contain no rules.</p>`;
                         rulesPageView.classList.remove('hidden');
                         controlsContainer.classList.remove('hidden');
                     }
@@ -516,7 +524,7 @@
                     } else if (target === 'back-to-sub-menu') {
                         rulesPageView.classList.add('hidden');
                         controlsContainer.classList.add('hidden');
-                        const isServerRule = currentCategoryData && currentCategoryData.category === 'Server Rules';
+                        const isServerRule = currentMainCategory === 'Server Rules';
                         if (isServerRule) {
                             serverRulesSelection.classList.remove('hidden');
                         } else {
@@ -541,11 +549,13 @@
                     return;
                 }
 
-                // Filter rules based on the search query within the current category
-                const searchResults = currentCategoryData.rules.filter(rule =>
-                    rule.shortDescription.toLowerCase().includes(query) ||
-                    rule.longDescription.toLowerCase().includes(query) ||
-                    rule.code.toLowerCase().includes(query)
+                // Filter rules based on the search query across all groups in the current category
+                const searchResults = currentCategoryData.flatMap(group =>
+                    (group.rules || []).filter(rule =>
+                        rule.shortDescription.toLowerCase().includes(query) ||
+                        rule.longDescription.toLowerCase().includes(query) ||
+                        rule.code.toLowerCase().includes(query)
+                    )
                 );
                 
                 // Display results and hide all category selections
