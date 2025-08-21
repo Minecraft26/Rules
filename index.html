@@ -370,31 +370,35 @@ const rulesConfig = {
                     groupHeader.textContent = group.title;
                     ruleList.appendChild(groupHeader);
                     
-                    group.rules.forEach((rule, ruleIndex) => {
-                        const articleNumber = rule.code ? `${categoryData.idPrefix}-${rule.code}` : `${categoryData.idPrefix}-${groupIndex + 1}-${ruleIndex + 1}`;
-                        const li = document.createElement("li");
-                        li.id = `rule-${articleNumber.toLowerCase().replace(/ /g, '-')}`;
-                        li.className = "rule-item";
-                        li.innerHTML = `
-                            <div class="rule-item-header">
-                                <span class="rule-title">${rule.shortDescription}</span>
-                                <div class="flex items-center">
-                                    <span class="rule-code text-gray-400 font-normal text-sm mr-2">${articleNumber}</span>
-                                    ${rule.page ? `<span class="rule-page text-gray-400 font-normal text-sm mr-2">Page: ${rule.page}</span>` : ''}
-                                    <div class="arrow-container">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                        </svg>
+                    if (group.rules && Array.isArray(group.rules)) { // Added check for group.rules
+                        group.rules.forEach((rule, ruleIndex) => {
+                            const articleNumber = rule.code ? `${categoryData.idPrefix}-${rule.code}` : `${categoryData.idPrefix}-${groupIndex + 1}-${ruleIndex + 1}`;
+                            const li = document.createElement("li");
+                            li.id = `rule-${articleNumber.toLowerCase().replace(/ /g, '-')}`;
+                            li.className = "rule-item";
+                            li.innerHTML = `
+                                <div class="rule-item-header">
+                                    <span class="rule-title">${rule.shortDescription}</span>
+                                    <div class="flex items-center">
+                                        <span class="rule-code text-gray-400 font-normal text-sm mr-2">${articleNumber}</span>
+                                        ${rule.page ? `<span class="rule-page text-gray-400 font-normal text-sm mr-2">Page: ${rule.page}</span>` : ''}
+                                        <div class="arrow-container">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <p class="rule-description">${rule.longDescription}</p>
-                        `;
-                        li.addEventListener("click", () => {
-                            li.classList.toggle("active");
+                                <p class="rule-description">${rule.longDescription}</p>
+                            `;
+                            li.addEventListener("click", () => {
+                                li.classList.toggle("active");
+                            });
+                            ruleList.appendChild(li);
                         });
-                        ruleList.appendChild(li);
-                    });
+                    } else {
+                        console.warn(`Group '${group.title}' does not have a valid 'rules' array.`);
+                    }
                 });
             }
 
