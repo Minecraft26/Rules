@@ -364,7 +364,7 @@
             const controlsContainer = document.getElementById('controls-container');
             const paginationButtonsContainer = document.getElementById('pagination-buttons');
             const backButtons = document.querySelectorAll('.back-button');
-            const rulesBoxes = document.querySelectorAll('.rules-box');
+            const subCategoryBoxes = document.querySelectorAll('#server-rules-selection .rules-box, #govt-rules-selection .rules-box');
 
             let currentCategoryId = '';
             let currentPage = 1;
@@ -466,7 +466,7 @@
             });
 
             // Handle sub-category button clicks (Necessary, Optional, etc.)
-            rulesBoxes.forEach(box => {
+            subCategoryBoxes.forEach(box => {
                 box.addEventListener('click', async () => { // Added async
                     const targetId = box.dataset.target;
                     const category = box.dataset.category;
