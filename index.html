@@ -335,6 +335,10 @@
 
             const fetchRules = async (id) => {
                 const config = rulesConfig[id];
+                if (!config) {
+                    console.error(`Error: No configuration found for ID: ${id}`);
+                    return null;
+                }
                 try {
                     const response = await fetch(config.json);
                     if (!response.ok) {
@@ -479,10 +483,7 @@
 
                     const fetchedData = await fetchRules(targetId); // Fetch data
 
-                    if (fetchedData) {
-                        // Now, fetchedData is the object like { title: "...", category: "...", rules: [...] }
-                        // We need to store this fetched data globally or pass it to renderRulesForPage
-                        // For simplicity, let's make currentCategoryData store the fetched data
+                    if (fetchedData && fetchedData.rules && Array.isArray(fetchedData.rules)) { // Added check for fetchedData.rules
                         currentCategoryData = fetchedData; 
                         const pageNumbers = new Set(currentCategoryData.rules.map(rule => rule.page));
                         totalPages = pageNumbers.size;
@@ -491,7 +492,7 @@
                         controlsContainer.classList.remove('hidden');
                         rulesPageView.classList.remove('hidden');
                     } else {
-                        dynamicRulesContent.innerHTML = `<p class="error-message">Failed to load rules for this category. Please check the JSON file and its path.</p>`;
+                        dynamicRulesContent.innerHTML = `<p class="error-message">Failed to load rules for this category. The JSON file might be missing, have an incorrect structure, or contain no rules.</p>`;
                         rulesPageView.classList.remove('hidden');
                         controlsContainer.classList.remove('hidden');
                     }
