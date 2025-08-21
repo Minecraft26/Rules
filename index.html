@@ -357,10 +357,10 @@ const rulesConfig = {
 
             function renderRules(categoryData, data) {
                 ruleList.innerHTML = "";
-                if (!data) {
+                if (!data || !Array.isArray(data)) { // Ensure data is an array
                     const errorMessage = document.createElement("div");
                     errorMessage.className = "error-message";
-                    errorMessage.textContent = "Failed to load rules. The JSON file is likely missing or has an incorrect structure. It should contain a 'groups' array.";
+                    errorMessage.textContent = "Failed to load rules. The JSON file is likely missing or has an incorrect structure. It should be an array of rule groups.";
                     ruleList.appendChild(errorMessage);
                     return;
                 }
@@ -371,7 +371,7 @@ const rulesConfig = {
                     ruleList.appendChild(groupHeader);
                     
                     group.rules.forEach((rule, ruleIndex) => {
-                        const articleNumber = rule.code ? `${categoryData.idPrefix}-${groupIndex + 1}-${rule.code}` : `${categoryData.idPrefix}-${groupIndex + 1}-${ruleIndex + 1}`;
+                        const articleNumber = rule.code ? `${categoryData.idPrefix}-${rule.code}` : `${categoryData.idPrefix}-${groupIndex + 1}-${ruleIndex + 1}`;
                         const li = document.createElement("li");
                         li.id = `rule-${articleNumber.toLowerCase().replace(/ /g, '-')}`;
                         li.className = "rule-item";
@@ -380,6 +380,7 @@ const rulesConfig = {
                                 <span class="rule-title">${rule.shortDescription}</span>
                                 <div class="flex items-center">
                                     <span class="rule-code text-gray-400 font-normal text-sm mr-2">${articleNumber}</span>
+                                    ${rule.page ? `<span class="rule-page text-gray-400 font-normal text-sm mr-2">Page: ${rule.page}</span>` : ''}
                                     <div class="arrow-container">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
@@ -453,10 +454,10 @@ const rulesConfig = {
                     const rules = await fetchRules(targetId);
                     
                     loadingIndicator.classList.add('hidden');
-                    if (rules && rules.groups) { // This is the crucial fix
-                        currentCategoryData = rules;
+                    if (rules) { // This is the crucial fix
+                        currentCategoryData = rulesConfig[targetId]; // Use the config for title
                         pageTitle.textContent = currentCategoryData.title;
-                        renderRules(currentCategoryData, rules.groups);
+                        renderRules(currentCategoryData, rules);
                         rulesPageView.classList.remove('hidden');
                         serverRulesSelection.classList.add('hidden');
                         govtRulesSelection.classList.add('hidden');
