@@ -293,17 +293,17 @@
         // RULES CONFIGURATION (JSON-based)
         // =============================================================
         const rulesConfig = {
-            "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "rules/necessary.json" },
-            "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "rules/optional.json" },
-            "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "rules/law-like.json" },
-            "rights-duties-rules": { title: "Rights & Duties", idPrefix: "SR-RD", json: "rules/rights-duties.json" },
-            "economy-rules": { title: "Economy", idPrefix: "SR-E", json: "rules/economy.json" },
-            "jobs-rules": { title: "Jobs", idPrefix: "SR-J", json: "rules/jobs.json" },
-            "judiciary-rules": { title: "Judiciary", idPrefix: "GR-JU", json: "rules/judiciary.json" },
-            "govt-leader-rules": { title: "Government Leader", idPrefix: "GR-GL", json: "rules/govt-leader.json" },
-            "lawyer-rules": { title: "Lawyer", idPrefix: "GR-LA", json: "rules/lawyer.json" },
-            "police-rules": { title: "Police", idPrefix: "GR-P", json: "rules/police.json" },
-            "finance-rules": { title: "Finance", idPrefix: "GR-F", json: "rules/finance.json" }
+            "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "server-rules/necessary.json" },
+            "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "server-rules/optional.json" },
+            "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "server-rules/law.json" },
+            "rights-duties-rules": { title: "Rights & Duties", idPrefix: "SR-RD", json: "server-rules/rights-duties.json" },
+            "economy-rules": { title: "Economy", idPrefix: "SR-E", json: "server-rules/economy.json" },
+            "jobs-rules": { title: "Jobs", idPrefix: "SR-J", json: "server-rules/jobs.json" },
+            "judiciary-rules": { title: "Judiciary", idPrefix: "GR-JU", json: "government-rules/judiciary.json" },
+            "govt-leader-rules": { title: "Government Leader", idPrefix: "GR-GL", json: "government-rules/govt-leader.json" },
+            "lawyer-rules": { title: "Lawyer", idPrefix: "GR-LA", json: "government-rules/lawyer.json" },
+            "police-rules": { title: "Police", idPrefix: "GR-P", json: "government-rules/police.json" },
+            "finance-rules": { title: "Finance", idPrefix: "GR-F", json: "government-rules/finance.json" }
         };
 
         // This function will now use a real fetch call to get the JSON data.
