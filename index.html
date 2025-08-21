@@ -148,68 +148,36 @@
             cursor: pointer;
             border: 1px solid #e8e8e8;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .rule-item:hover {
-            transform: translateX(8px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            background-color: #fcfcfc;
+            overflow: hidden;
         }
         .rule-item-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-weight: 600;
         }
-        .rule-item.highlighted {
-            background-color: #fffacd;
-            transform: translateY(-5px) scale(1.03);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.5s ease, transform 0.5s ease;
-        }
-        .rule-title-container {
-            display: flex;
-            align-items: center;
-        }
-        .rule-title {
-            font-size: 1.25em;
-        }
-        .rule-number {
-            font-size: 0.9em;
-            font-weight: 500;
-            color: #777;
-            margin-right: 15px;
-        }
-        .rule-short-description {
-            font-size: 0.9em;
-            font-weight: 400;
-            color: #666;
-            margin-top: 5px;
-            line-height: 1.5;
-        }
-        .rule-description {
+        .rule-item .rule-description {
             display: none;
             margin-top: 15px;
             padding-top: 12px;
             border-top: 1px dashed #d0d0d0;
             color: #555;
             line-height: 1.7;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
-            opacity: 0;
-            font-size: 0.95em;
+            font-weight: 400;
         }
         .rule-item.active .rule-description {
             display: block;
-            max-height: 300px;
-            opacity: 1;
         }
-        .footer {
-            text-align: center;
-            margin-top: 60px;
-            padding-top: 30px;
-            border-top: 1px solid #e5e5e5;
-            color: #888;
-            font-size: 1em;
+        .rule-item .arrow-container {
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        .rule-item.active .arrow-container {
+            transform: rotate(90deg);
+        }
+        .rule-item .arrow-container svg {
+            margin-left: 10px;
         }
         .hidden { display: none !important; }
         .search-container {
@@ -270,6 +238,20 @@
             cursor: not-allowed;
             opacity: 0.5;
         }
+        .global-results-container {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 15px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+        .global-result {
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #fff;
+            border-left: 4px solid #3498db;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -323,13 +305,17 @@
                 <h2 id="page-title"></h2>
             </div>
             <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search by Article No. (e.g., SR-N-1-1)">
-                <button id="searchButton" class="search-button">Search</button>
+                <input type="text" id="localSearchBox" class="search-input" placeholder="Search this category...">
+                <button id="localSearchButton" class="search-button flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                </button>
             </div>
             <div class="loading hidden">Loading rules...</div>
-            <ul id="rule-list">
+            <div id="rule-list">
                 <!-- Rules will be dynamically generated here -->
-            </ul>
+            </div>
             <div id="pagination-controls" class="pagination hidden">
                 <button id="prev-page" class="pagination-button">Previous</button>
                 <span id="page-numbers" class="text-lg font-medium text-gray-700"></span>
@@ -344,28 +330,6 @@
         // =============================================================
         // RULES CONFIGURATION (JSON-based)
         // =============================================================
-        // To use this code, you MUST create a 'rules' folder and add
-        // the corresponding JSON files. Each file should have the
-        // format: { "title": "...", "rules": [...] }
-        //
-        // Example `rules/necessary.json` file content:
-        // [
-        //   {
-        //     "title": "General",
-        //     "rules": [
-        //       { "shortDescription": "No griefing.", "longDescription": "Do not damage others' builds.", "page": 1 },
-        //       { "shortDescription": "No hacking.", "longDescription": "Using any unauthorized client or mod is prohibited.", "page": 1 }
-        //     ]
-        //   },
-        //   {
-        //     "title": "Chat",
-        //     "rules": [
-        //       { "shortDescription": "No spamming.", "longDescription": "Spamming the chat with messages is not allowed.", "page": 2 }
-        //     ]
-        //   }
-        // ]
-        // =============================================================
-
         const rulesConfig = {
             "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "server-rules/necessary.json" },
             "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "server-rules/optional.json" },
@@ -382,7 +346,6 @@
 
         // =============================================================
         // SCRIPT LOGIC
-        // (No need to edit below here unless you are adding new features)
         // =============================================================
         document.addEventListener('DOMContentLoaded', () => {
             // Main Sections
@@ -394,8 +357,8 @@
             // UI Elements
             const pageTitle = document.getElementById('page-title');
             const ruleList = document.getElementById('rule-list');
-            const searchInput = document.getElementById('searchInput');
-            const searchButton = document.getElementById('searchButton');
+            const localSearchBox = document.getElementById('localSearchBox');
+            const localSearchButton = document.getElementById('localSearchButton');
             const loadingIndicator = document.querySelector('.loading');
             const prevButton = document.getElementById('prev-page');
             const nextButton = document.getElementById('next-page');
@@ -411,13 +374,14 @@
             let currentCategoryData = null;
             let currentCategoryId = null;
             let currentPage = 1;
+            let currentCategoryRuleData = [];
 
             const updatePaginationControls = () => {
-                if (!currentCategoryData) {
+                if (!currentCategoryRuleData || currentCategoryRuleData.length === 0) {
                     paginationControls.classList.add('hidden');
                     return;
                 }
-                const allPages = currentCategoryData.groups.flatMap(g => g.rules.map(r => r.page));
+                const allPages = currentCategoryRuleData.flatMap(g => g.rules.map(r => r.page));
                 const totalPages = Math.max(...allPages);
                 pageNumbersSpan.textContent = `Page ${currentPage} of ${totalPages}`;
                 prevButton.disabled = currentPage === 1;
@@ -425,51 +389,61 @@
                 paginationControls.classList.remove("hidden");
             };
 
-            const renderRules = (categoryData, page) => {
-                ruleList.innerHTML = "";
-                categoryData.groups.forEach((group, groupIndex) => {
-                    const rulesOnPage = group.rules.filter(rule => rule.page === page);
-                    if (rulesOnPage.length > 0) {
-                        const groupHeader = document.createElement("h3");
-                        groupHeader.className = "text-xl font-bold mb-3 mt-6 border-b";
-                        groupHeader.textContent = group.title;
-                        ruleList.appendChild(groupHeader);
-                        rulesOnPage.forEach((rule, ruleIndex) => {
-                            const articleNumber = `${categoryData.idPrefix}-${groupIndex + 1}-${ruleIndex + 1}`;
-                            const li = document.createElement("li");
-                            li.id = `rule-${articleNumber.toLowerCase()}`;
-                            li.className = "rule-item";
-                            li.innerHTML = `
-                              <div class="rule-item-header">
-                                <span class="rule-number">${articleNumber}</span>
+            function renderRules(categoryData, data) {
+                ruleList.innerHTML = ""; 
+                data.forEach((group, groupIndex) => {
+                    const groupHeader = document.createElement("h3");
+                    groupHeader.className = "text-xl font-bold mb-3 mt-6 border-b";
+                    groupHeader.textContent = group.title;
+                    ruleList.appendChild(groupHeader);
+                    
+                    group.rules.forEach((rule, ruleIndex) => {
+                        const articleNumber = rule.code || `${categoryData.idPrefix}-${groupIndex + 1}-${ruleIndex + 1}`;
+                        const li = document.createElement("li");
+                        li.id = `rule-${articleNumber.toLowerCase()}`;
+                        li.className = "rule-item";
+                        li.innerHTML = `
+                            <div class="rule-item-header">
                                 <span class="rule-title">${rule.shortDescription}</span>
-                              </div>
-                              <p class="rule-description">${rule.longDescription}</p>
-                            `;
-                            li.addEventListener("click", () => li.classList.toggle("active"));
-                            ruleList.appendChild(li);
+                                <div class="flex items-center">
+                                    <span class="rule-code text-gray-400 font-normal text-sm mr-2">${articleNumber}</span>
+                                    <div class="arrow-container">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="rule-description">${rule.longDescription}</p>
+                        `;
+                        li.addEventListener("click", () => {
+                            li.classList.toggle("active");
                         });
-                    }
+                        ruleList.appendChild(li);
+                    });
                 });
-                updatePaginationControls();
-            };
+            }
 
-            const fetchRules = async (categoryKey) => {
-                loadingIndicator.classList.remove("hidden");
-                ruleList.innerHTML = "";
-                const config = rulesConfig[categoryKey];
-                if (!config) return null;
-                try {
-                    const res = await fetch(config.json);
-                    const groups = await res.json();
-                    loadingIndicator.classList.add("hidden");
-                    return { title: config.title, idPrefix: config.idPrefix, groups: groups };
-                } catch (e) {
-                    console.error("Failed to load", e);
-                    loadingIndicator.textContent = "Error loading rules.";
-                    return null;
+            function performLocalSearch(categoryId, searchBoxId) {
+                const searchTerm = document.getElementById(searchBoxId).value.trim().toLowerCase();
+                if (!searchTerm) {
+                    renderRules(currentCategoryData, currentCategoryRuleData);
+                    return;
                 }
-            };
+                const filteredData = currentCategoryRuleData.map(group => {
+                    return {
+                        title: group.title,
+                        rules: group.rules.filter(rule =>
+                            (rule.code && rule.code.toLowerCase().includes(searchTerm)) ||
+                            rule.shortDescription.toLowerCase().includes(searchTerm) ||
+                            rule.longDescription.toLowerCase().includes(searchTerm)
+                        )
+                    };
+                }).filter(group => group.rules.length > 0);
+                renderRules(currentCategoryData, filteredData);
+            }
+
+            // Removed the performGlobalSearch function and its listeners.
 
             mainRuleBoxes.forEach(box => {
                 box.addEventListener('click', () => {
@@ -492,8 +466,9 @@
                     const rules = await fetchRules(targetId);
                     if (rules) {
                         currentCategoryData = rules;
+                        currentCategoryRuleData = rules.groups;
                         pageTitle.textContent = currentCategoryData.title;
-                        renderRules(currentCategoryData, currentPage);
+                        renderRules(currentCategoryData, currentCategoryRuleData);
                         rulesPageView.classList.remove('hidden');
                         serverRulesSelection.classList.add('hidden');
                         govtRulesSelection.classList.add('hidden');
@@ -502,20 +477,36 @@
                 });
             });
 
+            localSearchButton.addEventListener('click', () => {
+                performLocalSearch(currentCategoryId, 'localSearchBox');
+            });
+
+            localSearchBox.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performLocalSearch(currentCategoryId, 'localSearchBox');
+                }
+            });
+
             prevButton.addEventListener('click', () => {
                 if (currentPage > 1) {
                     currentPage--;
-                    renderRules(currentCategoryData, currentPage);
+                    renderRules(currentCategoryData, currentCategoryRuleData.map(group => ({
+                        title: group.title,
+                        rules: group.rules.filter(rule => rule.page === currentPage)
+                    })));
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             });
 
             nextButton.addEventListener('click', () => {
-                const allPages = currentCategoryData.groups.flatMap(g => g.rules.map(r => r.page));
+                const allPages = currentCategoryRuleData.flatMap(g => g.rules.map(r => r.page));
                 const totalPages = Math.max(...allPages);
                 if (currentPage < totalPages) {
                     currentPage++;
-                    renderRules(currentCategoryData, currentPage);
+                    renderRules(currentCategoryData, currentCategoryRuleData.map(group => ({
+                        title: group.title,
+                        rules: group.rules.filter(rule => rule.page === currentPage)
+                    })));
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             });
@@ -530,7 +521,7 @@
                     } else if (target === 'back-to-sub-menu') {
                         rulesPageView.classList.add('hidden');
                         document.querySelectorAll('.rule-item').forEach(item => item.classList.remove('highlighted'));
-                        if (currentCategoryId.startsWith('necessary') || currentCategoryId.startsWith('optional') || currentCategoryId.startsWith('law-like') || currentCategoryId.startsWith('rights-duties') || currentCategoryId.startsWith('economy') || currentCategoryId.startsWith('jobs')) {
+                        if (currentCategoryId.startsWith('necessary') || currentCategoryId.startsWith('optional') || currentCategoryId.startsWith('law-like') || currentCategoryId.classList.contains('rights-duties') || currentCategoryId.startsWith('economy') || currentCategoryId.startsWith('jobs')) {
                             serverRulesSelection.classList.remove('hidden');
                         } else {
                             govtRulesSelection.classList.remove('hidden');
@@ -538,58 +529,6 @@
                     }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
-            });
-
-            const performSearch = () => {
-                const searchTerm = searchInput.value.trim().toLowerCase();
-                const allRuleItems = document.querySelectorAll('.rule-item');
-                allRuleItems.forEach(item => {
-                    item.classList.remove('highlighted', 'active');
-                    item.querySelector('.rule-description').style.maxHeight = 0;
-                    item.querySelector('.rule-description').style.opacity = 0;
-                    setTimeout(() => {
-                        item.querySelector('.rule-description').style.display = 'none';
-                    }, 500);
-                });
-
-                if (searchTerm === '') {
-                    renderRules(currentCategoryData, currentPage);
-                    return;
-                }
-
-                let foundRule = null;
-                let foundPage = null;
-
-                currentCategoryData.groups.forEach((group, gIndex) => {
-                  group.rules.forEach((rule, rIndex) => {
-                    const articleNumber = `${currentCategoryData.idPrefix}-${gIndex + 1}-${rIndex + 1}`;
-                    if (articleNumber.toLowerCase() === searchTerm) {
-                      foundRule = articleNumber.toLowerCase();
-                      foundPage = rule.page;
-                    }
-                  });
-                });
-
-                if (foundRule && foundPage) {
-                    currentPage = foundPage;
-                    renderRules(currentCategoryData, currentPage);
-                    
-                    const targetRule = document.getElementById(`rule-${foundRule}`);
-                    if (targetRule) {
-                        targetRule.classList.add("highlighted", "active");
-                        targetRule.querySelector(".rule-description").style.display = "block";
-                        targetRule.querySelector(".rule-description").style.maxHeight = targetRule.querySelector(".rule-description").scrollHeight + "px";
-                        targetRule.querySelector(".rule-description").style.opacity = 1;
-                        targetRule.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }
-                }
-            };
-
-            searchButton.addEventListener('click', performSearch);
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    performSearch();
-                }
             });
         });
     </script>
