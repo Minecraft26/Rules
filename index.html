@@ -258,20 +258,7 @@
     <div class="container">
         <div class="header text-center mb-12 pb-8 border-b-2 border-gray-200">
             <h1>Minecraft Server Rules <span class="text-yellow-500">⚠️</span></h1>
-            <div class="search-container mt-8">
-                <input type="text" id="globalSearchBox" class="search-input" placeholder="Search all rules...">
-                <button id="globalSearchButton" class="search-button flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                    </svg>
-                    Search
-                </button>
             </div>
-        </div>
-        <!-- Global Search Results -->
-        <div id="globalResults" class="global-results-container hidden">
-            <!-- Results will be injected here -->
-        </div>
         <!-- Tier 1: Main Categories -->
         <div id="main-selection" class="rules-selection-container mb-12">
             <div class="rules-box server-rules-main" data-target="server-rules"><span>Server Rules</span></div>
@@ -357,6 +344,24 @@
             "finance-rules": { title: "Finance", idPrefix: "GR-F", json: "government-rules/finance.json" }
         };
 
+        async function fetchRules(categoryId) {
+            try {
+                const config = rulesConfig[categoryId];
+                if (!config) {
+                    console.error(`No configuration found for category: ${categoryId}`);
+                    return null;
+                }
+                const response = await fetch(config.json);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const rules = await response.json();
+                return { title: config.title, idPrefix: config.idPrefix, groups: rules };
+            } catch (error) {
+                console.error("Could not fetch rules:", error);
+                return null;
+            }
+        }
 
         // =============================================================
         // SCRIPT LOGIC
@@ -371,12 +376,9 @@
             // UI Elements
             const pageTitle = document.getElementById('page-title');
             const ruleList = document.getElementById('rule-list');
-            const globalSearchBox = document.getElementById('globalSearchBox');
-            const globalSearchButton = document.getElementById('globalSearchButton');
             const localSearchBox = document.getElementById('localSearchBox');
             const localSearchButton = document.getElementById('localSearchButton');
             const loadingIndicator = document.querySelector('.loading');
-            const globalResultsContainer = document.getElementById('globalResults');
             const prevButton = document.getElementById('prev-page');
             const nextButton = document.getElementById('next-page');
             const pageNumbersSpan = document.getElementById('page-numbers');
@@ -460,64 +462,6 @@
                 renderRules(currentCategoryData, filteredData);
             }
 
-            async function performGlobalSearch(allConfigs) {
-                const term = globalSearchBox.value.trim().toLowerCase();
-                globalResultsContainer.innerHTML = "";
-                globalResultsContainer.classList.remove("hidden");
-                mainSelection.classList.add("hidden");
-                serverRulesSelection.classList.add("hidden");
-                govtRulesSelection.classList.add("hidden");
-                rulesPageView.classList.add("hidden");
-                
-                if (!term) {
-                    globalResultsContainer.innerHTML = "<p class='text-center text-gray-600'>Enter a search term to see results.</p>";
-                    return;
-                }
-                
-                loadingIndicator.classList.remove("hidden");
-                const allDataPromises = Object.entries(allConfigs).map(async ([key, config]) => {
-                    const res = await fetch(config.json);
-                    const data = await res.json();
-                    return { config, data };
-                });
-                
-                const allData = await Promise.all(allDataPromises);
-                loadingIndicator.classList.add("hidden");
-                
-                const resultsFound = [];
-                allData.forEach(({ config, data }) => {
-                    data.forEach((group, gIndex) => {
-                        group.rules.forEach((rule, rIndex) => {
-                            const articleNumber = rule.code || `${config.idPrefix}-${gIndex + 1}-${rIndex + 1}`;
-                            if (
-                                (rule.code && rule.code.toLowerCase().includes(term)) ||
-                                articleNumber.toLowerCase().includes(term) ||
-                                rule.shortDescription.toLowerCase().includes(term) ||
-                                rule.longDescription.toLowerCase().includes(term)
-                            ) {
-                                resultsFound.push({ config, articleNumber, rule });
-                            }
-                        });
-                    });
-                });
-                
-                if (resultsFound.length > 0) {
-                    resultsFound.forEach(result => {
-                        const resultDiv = document.createElement("div");
-                        resultDiv.classList.add("global-result");
-                        resultDiv.innerHTML = `
-                            <strong>${result.config.title}:</strong> 
-                            [${result.articleNumber}] ${result.rule.shortDescription} 
-                            <br><small>${result.rule.longDescription}</small>
-                            <br><em>Page ${result.rule.page}</em>
-                        `;
-                        globalResultsContainer.appendChild(resultDiv);
-                    });
-                } else {
-                    globalResultsContainer.innerHTML = "<p class='text-center text-gray-600'>No results found.</p>";
-                }
-            }
-
             mainRuleBoxes.forEach(box => {
                 box.addEventListener('click', () => {
                     const targetId = box.dataset.target;
@@ -527,7 +471,6 @@
                     } else if (targetId === 'govt-rules') {
                         govtRulesSelection.classList.remove('hidden');
                     }
-                    globalResultsContainer.classList.add("hidden");
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
             });
@@ -558,16 +501,6 @@
             localSearchBox.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     performLocalSearch(currentCategoryId, 'localSearchBox');
-                }
-            });
-
-            globalSearchButton.addEventListener('click', () => {
-                performGlobalSearch(rulesConfig);
-            });
-
-            globalSearchBox.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    performGlobalSearch(rulesConfig);
                 }
             });
 
@@ -607,11 +540,11 @@
                         document.querySelectorAll('.rule-item').forEach(item => item.classList.remove('highlighted'));
                         if (currentCategoryId.startsWith('necessary') || currentCategoryId.startsWith('optional') || currentCategoryId.startsWith('law-like') || currentCategoryId.classList.contains('rights-duties') || currentCategoryId.startsWith('economy') || currentCategoryId.startsWith('jobs')) {
                             serverRulesSelection.classList.remove('hidden');
-                        } else {
+                        }
+                        else {
                             govtRulesSelection.classList.remove('hidden');
                         }
                     }
-                    globalResultsContainer.classList.add("hidden");
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
             });
