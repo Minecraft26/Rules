@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minecraft Server Rules</title>
+    <!-- Use Tailwind CSS for a modern, responsive design -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Use the Inter font as requested -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
@@ -215,9 +217,6 @@
             font-size: 1.2em;
             color: #888;
         }
-        .pagination {
-            display: none !important; /* Hide pagination */
-        }
         .error-message {
             color: #e74c3c;
             text-align: center;
@@ -225,18 +224,50 @@
             font-size: 1.2em;
             font-weight: 500;
         }
+        .pagination-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .page-button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .page-button.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .page-button.inactive {
+            background-color: #e0e0e0;
+            color: #777;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Main Header -->
         <div class="header text-center mb-12 pb-8 border-b-2 border-gray-200">
             <h1>Minecraft Server Rules <span class="text-yellow-500">⚠️</span></h1>
         </div>
+        
+        <!-- Search and Page Controls -->
+        <div id="controls-container" class="hidden">
+            <div class="search-container">
+                <input type="text" id="local-search-box" class="search-input" placeholder="Search rules...">
+                <button id="local-search-button" class="search-button">Search</button>
+            </div>
+        </div>
+
         <!-- Tier 1: Main Categories -->
         <div id="main-selection" class="rules-selection-container mb-12">
             <div class="rules-box server-rules-main" data-target="server-rules"><span>Server Rules</span></div>
             <div class="rules-box govt-rules-main" data-target="govt-rules"><span>Government Rules</span></div>
         </div>
+
         <!-- Tier 2: Server Rules Sub-Categories -->
         <div id="server-rules-selection" class="rules-selection-container hidden">
             <button class="back-button flex items-center justify-center" data-target="main-selection">
@@ -252,6 +283,7 @@
             <div class="rules-box economy" data-target="economy-rules" data-category="Server Rules"><span>5. Economy and Business Rules</span></div>
             <div class="rules-box jobs" data-target="jobs-rules" data-category="Server Rules"><span>6. Jobs System</span></div>
         </div>
+
         <!-- Tier 2: Government Rules Sub-Categories -->
         <div id="govt-rules-selection" class="rules-selection-container hidden">
             <button class="back-button flex items-center justify-center" data-target="main-selection">
@@ -264,226 +296,211 @@
             <div class="rules-box govt-leader" data-target="govt-leader-rules" data-category="Government Rules"><span>2. Government Leader</span></div>
             <div class="rules-box lawyer" data-target="lawyer-rules" data-category="Government Rules"><span>3. Lawyer</span></div>
             <div class="rules-box police" data-target="police-rules" data-category="Government Rules"><span>4. Police</span></div>
-            <div class="rules-box finance-rule" data-target="finance-rules" data-category="Government Rules"><span>5. Finance Rule</span></div>
+            <div class="rules-box finance-rule" data-target="finance-rules" data-category="Government Rules"><span>5. Finance</span></div>
         </div>
-        <!-- Tier 3: Rules Details Page View -->
+
+        <!-- Rule Details Page -->
         <div id="rules-page-view" class="rules-section-page hidden">
+            <!-- Back button for this view -->
             <button class="back-button flex items-center justify-center" data-target="back-to-sub-menu">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
                 Back to Categories
             </button>
-            <div class="rules-header">
-                <h2 id="page-title"></h2>
-            </div>
-            <div class="search-container">
-                <input type="text" id="localSearchBox" class="search-input" placeholder="Search this category...">
-                <button id="localSearchButton" class="search-button flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-            </div>
-            <div class="loading hidden">Loading rules...</div>
-            <div id="rule-list">
-                <!-- Rules will be dynamically generated here -->
-            </div>
-            <!-- Pagination has been removed completely as per request -->
-        </div>
-        <div class="footer text-center mt-16 pt-8 border-t-2 border-gray-200 text-gray-600">
-            <p>© 2025 Minecraft Server | Built with ❤️ and blocks</p>
+
+            <!-- Rules will be dynamically populated here -->
+            <div id="dynamic-rules-content"></div>
+
+            <!-- Page navigation buttons -->
+            <div id="pagination-buttons" class="pagination-buttons"></div>
         </div>
     </div>
+
     <script>
-        // =============================================================
-        // RULES CONFIGURATION (JSON-based)
-        // =============================================================
-const rulesConfig = {
-            "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "server-rules/necessary.json" },
-            "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "server-rules/optional.json" },
-            "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "server-rules/law.json" },
-            "rights-duties-rules": { title: "Rights & Duties", idPrefix: "SR-RD", json: "server-rules/rights-duties.json" },
-            "economy-rules": { title: "Economy", idPrefix: "SR-E", json: "server-rules/economy.json" },
-            "jobs-rules": { title: "Jobs", idPrefix: "SR-J", json: "server-rules/jobs.json" },
-            "judiciary-rules": { title: "Judiciary", idPrefix: "GR-JU", json: "government-rules/judiciary.json" },
-            "govt-leader-rules": { title: "Government Leader", idPrefix: "GR-GL", json: "government-rules/govt-leader.json" },
-            "lawyer-rules": { title: "Lawyer", idPrefix: "GR-LA", json: "government-rules/lawyer.json" },
-            "police-rules": { title: "Police", idPrefix: "GR-P", json: "government-rules/police.json" },
-            "finance-rules": { title: "Finance", idPrefix: "GR-F", json: "government-rules/finance.json" }
-        };
-
-        // This function will now use a real fetch call to get the JSON data.
-        const fetchRules = async (id) => {
-            const config = rulesConfig[id];
-            try {
-                const response = await fetch(config.json);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error("Could not fetch rules:", error);
-                return null; // Return null on error
-            }
-        };
-
-        // =============================================================
-        // SCRIPT LOGIC
-        // =============================================================
         document.addEventListener('DOMContentLoaded', () => {
-            // Main Sections
+            const rulesConfig = {
+                "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "server-rules/necessary.json" },
+                "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "server-rules/optional.json" },
+                "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "server-rules/law.json" },
+                "rights-duties-rules": { title: "Rights & Duties", idPrefix: "SR-RD", json: "server-rules/rights-duties.json" },
+                "economy-rules": { title: "Economy", idPrefix: "SR-E", json: "server-rules/economy.json" },
+                "jobs-rules": { title: "Jobs", idPrefix: "SR-J", json: "server-rules/jobs.json" },
+                "judiciary-rules": { title: "Judiciary", idPrefix: "GR-JU", json: "government-rules/judiciary.json" },
+                "govt-leader-rules": { title: "Government Leader", idPrefix: "GR-GL", json: "government-rules/govt-leader.json" },
+                "lawyer-rules": { title: "Lawyer", idPrefix: "GR-LA", json: "government-rules/lawyer.json" },
+                "police-rules": { title: "Police", idPrefix: "GR-P", json: "government-rules/police.json" },
+                "finance-rules": { title: "Finance", idPrefix: "GR-F", json: "government-rules/finance.json" }
+            };
+
+            const fetchRules = async (id) => {
+                const config = rulesConfig[id];
+                try {
+                    const response = await fetch(config.json);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error("Could not fetch rules:", error);
+                    return null; // Return null on error
+                }
+            };
+            
+
+            // Get all necessary DOM elements
             const mainSelection = document.getElementById('main-selection');
             const serverRulesSelection = document.getElementById('server-rules-selection');
             const govtRulesSelection = document.getElementById('govt-rules-selection');
             const rulesPageView = document.getElementById('rules-page-view');
-            
-            // UI Elements
-            const pageTitle = document.getElementById('page-title');
-            const ruleList = document.getElementById('rule-list');
-            const localSearchBox = document.getElementById('localSearchBox');
-            const localSearchButton = document.getElementById('localSearchButton');
-            const loadingIndicator = document.querySelector('.loading');
-            
-            // All clickable boxes and buttons
-            const mainRuleBoxes = document.querySelectorAll('#main-selection .rules-box');
-            const subRuleBoxes = document.querySelectorAll('#server-rules-selection .rules-box, #govt-rules-selection .rules-box');
+            const dynamicRulesContent = document.getElementById('dynamic-rules-content');
+            const localSearchBox = document.getElementById('local-search-box');
+            const localSearchButton = document.getElementById('local-search-button');
+            const controlsContainer = document.getElementById('controls-container');
+            const paginationButtonsContainer = document.getElementById('pagination-buttons');
             const backButtons = document.querySelectorAll('.back-button');
+            const rulesBoxes = document.querySelectorAll('.rules-box');
 
-            // Global state
-            let currentCategoryData = null;
-            let currentCategoryId = null;
+            let currentCategoryId = '';
+            let currentPage = 1;
+            let totalPages = 1;
 
-            function renderRules(categoryData, data) {
-                ruleList.innerHTML = "";
-                if (!data || !Array.isArray(data)) { // Ensure data is an array
-                    const errorMessage = document.createElement("div");
-                    errorMessage.className = "error-message";
-                    errorMessage.textContent = "Failed to load rules. The JSON file is likely missing or has an incorrect structure. It should be an array of rule groups.";
-                    ruleList.appendChild(errorMessage);
+            // Function to generate and display rule items for the current page
+            function renderRulesForPage(categoryData) { // Added categoryData parameter
+                dynamicRulesContent.innerHTML = '';
+                if (!categoryData || !categoryData.rules || !Array.isArray(categoryData.rules)) {
+                    dynamicRulesContent.innerHTML = `<p class="error-message">Invalid rule data for this category.</p>`;
                     return;
                 }
-                data.forEach((group, groupIndex) => {
-                    const groupHeader = document.createElement("h3");
-                    groupHeader.className = "text-xl font-bold mb-3 mt-6 border-b";
-                    groupHeader.textContent = group.title;
-                    ruleList.appendChild(groupHeader);
-                    
-                    if (group.rules && Array.isArray(group.rules)) { // Added check for group.rules
-                        group.rules.forEach((rule, ruleIndex) => {
-                            const articleNumber = rule.code ? `${categoryData.idPrefix}-${rule.code}` : `${categoryData.idPrefix}-${groupIndex + 1}-${ruleIndex + 1}`;
-                            const li = document.createElement("li");
-                            li.id = `rule-${articleNumber.toLowerCase().replace(/ /g, '-')}`;
-                            li.className = "rule-item";
-                            li.innerHTML = `
-                                <div class="rule-item-header">
-                                    <span class="rule-title">${rule.shortDescription}</span>
-                                    <div class="flex items-center">
-                                        <span class="rule-code text-gray-400 font-normal text-sm mr-2">${articleNumber}</span>
-                                        ${rule.page ? `<span class="rule-page text-gray-400 font-normal text-sm mr-2">Page: ${rule.page}</span>` : ''}
-                                        <div class="arrow-container">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="rule-description">${rule.longDescription}</p>
-                            `;
-                            li.addEventListener("click", () => {
-                                li.classList.toggle("active");
-                            });
-                            ruleList.appendChild(li);
-                        });
-                    } else {
-                        console.warn(`Group '${group.title}' does not have a valid 'rules' array.`);
-                    }
-                });
-            }
 
-            function performLocalSearch() {
-                const searchTerm = localSearchBox.value.trim().toLowerCase();
-                const allRuleItems = document.querySelectorAll('#rule-list .rule-item');
-                let foundMatch = false;
+                // Filter rules for the current page
+                const rulesToRender = categoryData.rules.filter(rule => rule.page === currentPage);
                 
-                allRuleItems.forEach(item => {
-                    const title = item.querySelector('.rule-title').textContent.toLowerCase();
-                    const description = item.querySelector('.rule-description').textContent.toLowerCase();
-                    const code = item.querySelector('.rule-code').textContent.toLowerCase();
-
-                    if (title.includes(searchTerm) || description.includes(searchTerm) || code.includes(searchTerm)) {
-                        item.classList.remove('hidden');
-                        foundMatch = true;
-                    } else {
-                        item.classList.add('hidden');
-                    }
-                });
-
-                // Display a message if no results are found
-                const noResultsMessage = document.getElementById('no-results-message');
-                if (!foundMatch && searchTerm !== '') {
-                    if (!noResultsMessage) {
-                        const messageDiv = document.createElement('div');
-                        messageDiv.id = 'no-results-message';
-                        messageDiv.className = 'text-center text-gray-500 mt-8';
-                        messageDiv.textContent = 'No rules found matching your search.';
-                        ruleList.appendChild(messageDiv);
-                    }
-                } else if (noResultsMessage) {
-                    noResultsMessage.remove();
+                if (rulesToRender.length === 0) {
+                    dynamicRulesContent.innerHTML = `<p class="error-message">No rules found for this page.</p>`;
+                    return;
                 }
+
+                // Create and append a header for the category
+                const header = document.createElement('div');
+                header.innerHTML = `<h2 class="rules-header">Page ${currentPage} of ${totalPages} - ${categoryData.title}</h2>`;
+                dynamicRulesContent.appendChild(header);
+
+                // Create and append each rule item
+                rulesToRender.forEach(rule => {
+                    const ruleItem = document.createElement('div');
+                    ruleItem.classList.add('rule-item', 'transition-all', 'duration-300', 'transform', 'hover:scale-101');
+                    ruleItem.innerHTML = `
+                        <div class="rule-item-header">
+                            <div>
+                                <span class="text-xl font-bold text-blue-600">${rule.code}</span>
+                                <span class="ml-4 text-lg font-semibold text-gray-800">${rule.shortDescription}</span>
+                                <span class="ml-4 text-sm text-gray-500">(Page: ${rule.page})</span>
+                            </div>
+                            <span class="arrow-container">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="rule-description">
+                            <p>${rule.longDescription}</p>
+                        </div>
+                    `;
+                    // Add accordion-like click event
+                    ruleItem.addEventListener('click', () => {
+                        ruleItem.classList.toggle('active');
+                    });
+                    dynamicRulesContent.appendChild(ruleItem);
+                });
+                updatePaginationButtons();
             }
 
-            mainRuleBoxes.forEach(box => {
-                box.addEventListener('click', () => {
-                    const targetId = box.dataset.target;
-                    mainSelection.classList.add('hidden');
-                    if (targetId === 'server-rules') {
-                        serverRulesSelection.classList.remove('hidden');
-                    } else if (targetId === 'govt-rules') {
-                        govtRulesSelection.classList.remove('hidden');
-                    }
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-            });
-
-            subRuleBoxes.forEach(box => {
-                box.addEventListener('click', async () => {
-                    const targetId = box.dataset.target;
-                    currentCategoryId = targetId;
-                    loadingIndicator.classList.remove('hidden');
-                    rulesPageView.classList.add('hidden');
-                    
-                    const rules = await fetchRules(targetId);
-                    
-                    loadingIndicator.classList.add('hidden');
-                    if (rules) { // This is the crucial fix
-                        currentCategoryData = rulesConfig[targetId]; // Use the config for title
-                        pageTitle.textContent = currentCategoryData.title;
-                        renderRules(currentCategoryData, rules);
-                        rulesPageView.classList.remove('hidden');
-                        serverRulesSelection.classList.add('hidden');
-                        govtRulesSelection.classList.add('hidden');
-                    } else {
-                        pageTitle.textContent = rulesConfig[targetId].title;
-                        rulesPageView.classList.remove('hidden');
-                        serverRulesSelection.classList.add('hidden');
-                        govtRulesSelection.classList.add('hidden');
-                        renderRules(rulesConfig[targetId], null); // Pass null to trigger the error message
-                    }
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-            });
-
-            localSearchButton.addEventListener('click', performLocalSearch);
-
-            localSearchBox.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    performLocalSearch();
+            // Function to update the page navigation buttons
+            function updatePaginationButtons() {
+                paginationButtonsContainer.innerHTML = '';
+                if (totalPages <= 1) {
+                    return;
                 }
+                const prevButton = document.createElement('button');
+                prevButton.textContent = '← Prev';
+                prevButton.classList.add('page-button', 'rounded-md', currentPage === 1 ? 'inactive' : 'active');
+                prevButton.disabled = currentPage === 1;
+                prevButton.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderRulesForPage();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+                paginationButtonsContainer.appendChild(prevButton);
+
+                const nextButton = document.createElement('button');
+                nextButton.textContent = 'Next →';
+                nextButton.classList.add('page-button', 'rounded-md', currentPage === totalPages ? 'inactive' : 'active');
+                nextButton.disabled = currentPage === totalPages;
+                nextButton.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderRulesForPage();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+                paginationButtonsContainer.appendChild(nextButton);
+            }
+
+            // Handle main category button clicks (Server Rules, Government Rules)
+            document.querySelector('.server-rules-main').addEventListener('click', () => {
+                mainSelection.classList.add('hidden');
+                serverRulesSelection.classList.remove('hidden');
+            });
+            document.querySelector('.govt-rules-main').addEventListener('click', () => {
+                mainSelection.classList.add('hidden');
+                govtRulesSelection.classList.remove('hidden');
             });
 
+            // Handle sub-category button clicks (Necessary, Optional, etc.)
+            rulesBoxes.forEach(box => {
+                box.addEventListener('click', async () => { // Added async
+                    const targetId = box.dataset.target;
+                    const category = box.dataset.category;
+                    
+                    if (category === 'Server Rules') {
+                        serverRulesSelection.classList.add('hidden');
+                    } else if (category === 'Government Rules') {
+                        govtRulesSelection.classList.add('hidden');
+                    }
+                    
+                    currentCategoryId = targetId;
+                    controlsContainer.classList.add('hidden'); // Hide controls while loading
+                    rulesPageView.classList.add('hidden'); // Hide rules view while loading
+                    dynamicRulesContent.innerHTML = '<p class="loading">Loading rules...</p>'; // Show loading message
+
+                    const fetchedData = await fetchRules(targetId); // Fetch data
+
+                    if (fetchedData) {
+                        // Now, fetchedData is the object like { title: "...", category: "...", rules: [...] }
+                        // We need to store this fetched data globally or pass it to renderRulesForPage
+                        // For simplicity, let's make currentCategoryData store the fetched data
+                        currentCategoryData = fetchedData; 
+                        const pageNumbers = new Set(currentCategoryData.rules.map(rule => rule.page));
+                        totalPages = pageNumbers.size;
+                        currentPage = 1;
+                        renderRulesForPage(currentCategoryData); // Pass fetched data
+                        controlsContainer.classList.remove('hidden');
+                        rulesPageView.classList.remove('hidden');
+                    } else {
+                        dynamicRulesContent.innerHTML = `<p class="error-message">Failed to load rules for this category. Please check the JSON file and its path.</p>`;
+                        rulesPageView.classList.remove('hidden');
+                        controlsContainer.classList.remove('hidden');
+                    }
+                    localSearchBox.value = ''; // Clear search box on new category selection
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
+                });
+            });
+
+            // Handle back button clicks
             backButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const target = button.dataset.target;
@@ -491,17 +508,92 @@ const rulesConfig = {
                     if (target === 'main-selection') {
                         serverRulesSelection.classList.add('hidden');
                         govtRulesSelection.classList.add('hidden');
+                        rulesPageView.classList.add('hidden');
                         mainSelection.classList.remove('hidden');
+                        controlsContainer.classList.add('hidden');
                     } else if (target === 'back-to-sub-menu') {
                         rulesPageView.classList.add('hidden');
-                        if (serverRulesSelection.classList.contains('hidden') === false) {
+                        controlsContainer.classList.add('hidden');
+                        const isServerRule = currentCategoryData && currentCategoryData.category === 'Server Rules';
+                        if (isServerRule) {
                             serverRulesSelection.classList.remove('hidden');
                         } else {
                             govtRulesSelection.classList.remove('hidden');
                         }
+                        dynamicRulesContent.innerHTML = '';
                     }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
+            });
+
+            // Handle search functionality
+            function performLocalSearch() {
+                const query = localSearchBox.value.toLowerCase().trim();
+                if (query === '') {
+                    // Go back to the main category view if search is empty
+                    rulesPageView.classList.add('hidden');
+                    serverRulesSelection.classList.add('hidden');
+                    govtRulesSelection.classList.add('hidden');
+                    mainSelection.classList.remove('hidden');
+                    controlsContainer.classList.add('hidden');
+                    return;
+                }
+
+                // Filter rules based on the search query within the current category
+                const searchResults = currentCategoryData.rules.filter(rule =>
+                    rule.shortDescription.toLowerCase().includes(query) ||
+                    rule.longDescription.toLowerCase().includes(query) ||
+                    rule.code.toLowerCase().includes(query)
+                );
+                
+                // Display results and hide all category selections
+                serverRulesSelection.classList.add('hidden');
+                govtRulesSelection.classList.add('hidden');
+                mainSelection.classList.add('hidden');
+                rulesPageView.classList.remove('hidden');
+                controlsContainer.classList.remove('hidden');
+
+                dynamicRulesContent.innerHTML = '';
+                if (searchResults.length === 0) {
+                    dynamicRulesContent.innerHTML = `<p class="error-message">No rules found for "${query}".</p>`;
+                    return;
+                }
+
+                // Display search results
+                searchResults.forEach(rule => {
+                    const ruleItem = document.createElement('div');
+                    ruleItem.classList.add('rule-item', 'transition-all', 'duration-300', 'transform', 'hover:scale-101');
+                    ruleItem.innerHTML = `
+                            <div class="rule-item-header">
+                                <div>
+                                    <span class="text-xl font-bold text-blue-600">${rule.code}</span>
+                                    <span class="ml-4 text-lg font-semibold text-gray-800">${rule.shortDescription}</span>
+                                    <span class="ml-4 text-sm text-gray-500">(Page: ${rule.page})</span>
+                                </div>
+                                <span class="arrow-container">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="rule-description">
+                                <p>${rule.longDescription}</p>
+                            </div>
+                        `;
+                    // Add accordion-like click event
+                    ruleItem.addEventListener('click', () => {
+                        ruleItem.classList.toggle('active');
+                    });
+                    dynamicRulesContent.appendChild(ruleItem);
+                });
+                paginationButtonsContainer.innerHTML = ''; // Hide pagination for search results
+            }
+
+            localSearchButton.addEventListener('click', performLocalSearch);
+            localSearchBox.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performLocalSearch();
+                }
             });
         });
     </script>
