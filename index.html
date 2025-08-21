@@ -216,41 +216,7 @@
             color: #888;
         }
         .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 25px;
-            gap: 10px;
-        }
-        .pagination-button {
-            padding: 10px 20px;
-            border-radius: 8px;
-            background-color: #ecf0f1;
-            color: #2c3e50;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
-        }
-        .pagination-button:hover:not(:disabled) {
-            background-color: #bdc3c7;
-        }
-        .pagination-button:disabled {
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-        .global-results-container {
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 15px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
-        }
-        .global-result {
-            padding: 15px;
-            margin-bottom: 10px;
-            background-color: #fff;
-            border-left: 4px solid #3498db;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: none !important; /* Hide pagination */
         }
     </style>
 </head>
@@ -258,7 +224,7 @@
     <div class="container">
         <div class="header text-center mb-12 pb-8 border-b-2 border-gray-200">
             <h1>Minecraft Server Rules <span class="text-yellow-500">⚠️</span></h1>
-            </div>
+        </div>
         <!-- Tier 1: Main Categories -->
         <div id="main-selection" class="rules-selection-container mb-12">
             <div class="rules-box server-rules-main" data-target="server-rules"><span>Server Rules</span></div>
@@ -316,11 +282,7 @@
             <div id="rule-list">
                 <!-- Rules will be dynamically generated here -->
             </div>
-            <div id="pagination-controls" class="pagination hidden">
-                <button id="prev-page" class="pagination-button">Previous</button>
-                <span id="page-numbers" class="text-lg font-medium text-gray-700"></span>
-                <button id="next-page" class="pagination-button">Next</button>
-            </div>
+            <!-- Pagination has been removed completely as per request -->
         </div>
         <div class="footer text-center mt-16 pt-8 border-t-2 border-gray-200 text-gray-600">
             <p>© 2025 Minecraft Server | Built with ❤️ and blocks</p>
@@ -330,38 +292,35 @@
         // =============================================================
         // RULES CONFIGURATION (JSON-based)
         // =============================================================
- const rulesConfig = {
-            "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "server-rules/necessary.json" },
-            "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "server-rules/optional.json" },
-            "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "server-rules/law-like.json" },
-            "rights-duties-rules": { title: "Rights & Duties", idPrefix: "SR-RD", json: "server-rules/rights-duties.json" },
-            "economy-rules": { title: "Economy", idPrefix: "SR-E", json: "server-rules/economy.json" },
-            "jobs-rules": { title: "Jobs", idPrefix: "SR-J", json: "server-rules/jobs.json" },
-            "judiciary-rules": { title: "Judiciary", idPrefix: "GR-JU", json: "government-rules/judiciary.json" },
-            "govt-leader-rules": { title: "Government Leader", idPrefix: "GR-GL", json: "government-rules/govt-leader.json" },
-            "lawyer-rules": { title: "Lawyer", idPrefix: "GR-LA", json: "government-rules/lawyer.json" },
-            "police-rules": { title: "Police", idPrefix: "GR-P", json: "government-rules/police.json" },
-            "finance-rules": { title: "Finance", idPrefix: "GR-F", json: "government-rules/finance.json" }
+        const rulesConfig = {
+            "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "rules/necessary.json" },
+            "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "rules/optional.json" },
+            "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "rules/law-like.json" },
+            "rights-duties-rules": { title: "Rights & Duties", idPrefix: "SR-RD", json: "rules/rights-duties.json" },
+            "economy-rules": { title: "Economy", idPrefix: "SR-E", json: "rules/economy.json" },
+            "jobs-rules": { title: "Jobs", idPrefix: "SR-J", json: "rules/jobs.json" },
+            "judiciary-rules": { title: "Judiciary", idPrefix: "GR-JU", json: "rules/judiciary.json" },
+            "govt-leader-rules": { title: "Government Leader", idPrefix: "GR-GL", json: "rules/govt-leader.json" },
+            "lawyer-rules": { title: "Lawyer", idPrefix: "GR-LA", json: "rules/lawyer.json" },
+            "police-rules": { title: "Police", idPrefix: "GR-P", json: "rules/police.json" },
+            "finance-rules": { title: "Finance", idPrefix: "GR-F", json: "rules/finance.json" }
         };
 
-        async function fetchRules(categoryId) {
+        // This function will now use a real fetch call to get the JSON data.
+        const fetchRules = async (id) => {
+            const config = rulesConfig[id];
             try {
-                const config = rulesConfig[categoryId];
-                if (!config) {
-                    console.error(`No configuration found for category: ${categoryId}`);
-                    return null;
-                }
                 const response = await fetch(config.json);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const rules = await response.json();
-                return { title: config.title, idPrefix: config.idPrefix, groups: rules };
+                const data = await response.json();
+                return data;
             } catch (error) {
                 console.error("Could not fetch rules:", error);
-                return null;
+                return null; // Return null on error
             }
-        }
+        };
 
         // =============================================================
         // SCRIPT LOGIC
@@ -379,10 +338,6 @@
             const localSearchBox = document.getElementById('localSearchBox');
             const localSearchButton = document.getElementById('localSearchButton');
             const loadingIndicator = document.querySelector('.loading');
-            const prevButton = document.getElementById('prev-page');
-            const nextButton = document.getElementById('next-page');
-            const pageNumbersSpan = document.getElementById('page-numbers');
-            const paginationControls = document.getElementById('pagination-controls');
             
             // All clickable boxes and buttons
             const mainRuleBoxes = document.querySelectorAll('#main-selection .rules-box');
@@ -392,21 +347,6 @@
             // Global state
             let currentCategoryData = null;
             let currentCategoryId = null;
-            let currentPage = 1;
-            let currentCategoryRuleData = [];
-
-            const updatePaginationControls = () => {
-                if (!currentCategoryRuleData || currentCategoryRuleData.length === 0) {
-                    paginationControls.classList.add('hidden');
-                    return;
-                }
-                const allPages = currentCategoryRuleData.flatMap(g => g.rules.map(r => r.page));
-                const totalPages = Math.max(...allPages);
-                pageNumbersSpan.textContent = `Page ${currentPage} of ${totalPages}`;
-                prevButton.disabled = currentPage === 1;
-                nextButton.disabled = currentPage === totalPages;
-                paginationControls.classList.remove("hidden");
-            };
 
             function renderRules(categoryData, data) {
                 ruleList.innerHTML = ""; 
@@ -417,9 +357,9 @@
                     ruleList.appendChild(groupHeader);
                     
                     group.rules.forEach((rule, ruleIndex) => {
-                        const articleNumber = rule.code || `${categoryData.idPrefix}-${groupIndex + 1}-${ruleIndex + 1}`;
+                        const articleNumber = rule.code ? `${categoryData.idPrefix}-${groupIndex + 1}-${rule.code}` : `${categoryData.idPrefix}-${groupIndex + 1}-${ruleIndex + 1}`;
                         const li = document.createElement("li");
-                        li.id = `rule-${articleNumber.toLowerCase()}`;
+                        li.id = `rule-${articleNumber.toLowerCase().replace(/ /g, '-')}`;
                         li.className = "rule-item";
                         li.innerHTML = `
                             <div class="rule-item-header">
@@ -443,23 +383,37 @@
                 });
             }
 
-            function performLocalSearch(categoryId, searchBoxId) {
-                const searchTerm = document.getElementById(searchBoxId).value.trim().toLowerCase();
-                if (!searchTerm) {
-                    renderRules(currentCategoryData, currentCategoryRuleData);
-                    return;
+            function performLocalSearch() {
+                const searchTerm = localSearchBox.value.trim().toLowerCase();
+                const allRuleItems = document.querySelectorAll('#rule-list .rule-item');
+                let foundMatch = false;
+                
+                allRuleItems.forEach(item => {
+                    const title = item.querySelector('.rule-title').textContent.toLowerCase();
+                    const description = item.querySelector('.rule-description').textContent.toLowerCase();
+                    const code = item.querySelector('.rule-code').textContent.toLowerCase();
+
+                    if (title.includes(searchTerm) || description.includes(searchTerm) || code.includes(searchTerm)) {
+                        item.classList.remove('hidden');
+                        foundMatch = true;
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+
+                // Display a message if no results are found
+                const noResultsMessage = document.getElementById('no-results-message');
+                if (!foundMatch && searchTerm !== '') {
+                    if (!noResultsMessage) {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.id = 'no-results-message';
+                        messageDiv.className = 'text-center text-gray-500 mt-8';
+                        messageDiv.textContent = 'No rules found matching your search.';
+                        ruleList.appendChild(messageDiv);
+                    }
+                } else if (noResultsMessage) {
+                    noResultsMessage.remove();
                 }
-                const filteredData = currentCategoryRuleData.map(group => {
-                    return {
-                        title: group.title,
-                        rules: group.rules.filter(rule =>
-                            (rule.code && rule.code.toLowerCase().includes(searchTerm)) ||
-                            rule.shortDescription.toLowerCase().includes(searchTerm) ||
-                            rule.longDescription.toLowerCase().includes(searchTerm)
-                        )
-                    };
-                }).filter(group => group.rules.length > 0);
-                renderRules(currentCategoryData, filteredData);
             }
 
             mainRuleBoxes.forEach(box => {
@@ -479,69 +433,45 @@
                 box.addEventListener('click', async () => {
                     const targetId = box.dataset.target;
                     currentCategoryId = targetId;
-                    currentPage = 1;
+                    loadingIndicator.classList.remove('hidden');
+                    rulesPageView.classList.add('hidden');
+                    
                     const rules = await fetchRules(targetId);
+                    
+                    loadingIndicator.classList.add('hidden');
                     if (rules) {
                         currentCategoryData = rules;
-                        currentCategoryRuleData = rules.groups;
                         pageTitle.textContent = currentCategoryData.title;
-                        renderRules(currentCategoryData, currentCategoryRuleData);
+                        renderRules(currentCategoryData, rules.groups);
                         rulesPageView.classList.remove('hidden');
                         serverRulesSelection.classList.add('hidden');
                         govtRulesSelection.classList.add('hidden');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
             });
 
-            localSearchButton.addEventListener('click', () => {
-                performLocalSearch(currentCategoryId, 'localSearchBox');
-            });
+            localSearchButton.addEventListener('click', performLocalSearch);
 
             localSearchBox.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    performLocalSearch(currentCategoryId, 'localSearchBox');
-                }
-            });
-
-            prevButton.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderRules(currentCategoryData, currentCategoryRuleData.map(group => ({
-                        title: group.title,
-                        rules: group.rules.filter(rule => rule.page === currentPage)
-                    })));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-            });
-
-            nextButton.addEventListener('click', () => {
-                const allPages = currentCategoryRuleData.flatMap(g => g.rules.map(r => r.page));
-                const totalPages = Math.max(...allPages);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderRules(currentCategoryData, currentCategoryRuleData.map(group => ({
-                        title: group.title,
-                        rules: group.rules.filter(rule => rule.page === currentPage)
-                    })));
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    performLocalSearch();
                 }
             });
 
             backButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const target = button.dataset.target;
+                    localSearchBox.value = ''; // Clear search box on back button
                     if (target === 'main-selection') {
                         serverRulesSelection.classList.add('hidden');
                         govtRulesSelection.classList.add('hidden');
                         mainSelection.classList.remove('hidden');
                     } else if (target === 'back-to-sub-menu') {
                         rulesPageView.classList.add('hidden');
-                        document.querySelectorAll('.rule-item').forEach(item => item.classList.remove('highlighted'));
-                        if (currentCategoryId.startsWith('necessary') || currentCategoryId.startsWith('optional') || currentCategoryId.startsWith('law-like') || currentCategoryId.classList.contains('rights-duties') || currentCategoryId.startsWith('economy') || currentCategoryId.startsWith('jobs')) {
+                        if (serverRulesSelection.classList.contains('hidden') === false) {
                             serverRulesSelection.classList.remove('hidden');
-                        }
-                        else {
+                        } else {
                             govtRulesSelection.classList.remove('hidden');
                         }
                     }
