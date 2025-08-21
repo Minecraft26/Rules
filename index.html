@@ -218,6 +218,13 @@
         .pagination {
             display: none !important; /* Hide pagination */
         }
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -292,7 +299,7 @@
         // =============================================================
         // RULES CONFIGURATION (JSON-based)
         // =============================================================
-        const rulesConfig = {
+const rulesConfig = {
             "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "server-rules/necessary.json" },
             "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "server-rules/optional.json" },
             "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "server-rules/law.json" },
@@ -349,7 +356,14 @@
             let currentCategoryId = null;
 
             function renderRules(categoryData, data) {
-                ruleList.innerHTML = ""; 
+                ruleList.innerHTML = "";
+                if (!data) {
+                    const errorMessage = document.createElement("div");
+                    errorMessage.className = "error-message";
+                    errorMessage.textContent = "Failed to load rules. The JSON file is likely missing or has an incorrect structure. It should contain a 'groups' array.";
+                    ruleList.appendChild(errorMessage);
+                    return;
+                }
                 data.forEach((group, groupIndex) => {
                     const groupHeader = document.createElement("h3");
                     groupHeader.className = "text-xl font-bold mb-3 mt-6 border-b";
@@ -439,13 +453,19 @@
                     const rules = await fetchRules(targetId);
                     
                     loadingIndicator.classList.add('hidden');
-                    if (rules) {
+                    if (rules && rules.groups) { // This is the crucial fix
                         currentCategoryData = rules;
                         pageTitle.textContent = currentCategoryData.title;
                         renderRules(currentCategoryData, rules.groups);
                         rulesPageView.classList.remove('hidden');
                         serverRulesSelection.classList.add('hidden');
                         govtRulesSelection.classList.add('hidden');
+                    } else {
+                        pageTitle.textContent = rulesConfig[targetId].title;
+                        rulesPageView.classList.remove('hidden');
+                        serverRulesSelection.classList.add('hidden');
+                        govtRulesSelection.classList.add('hidden');
+                        renderRules(rulesConfig[targetId], null); // Pass null to trigger the error message
                     }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
