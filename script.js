@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rulesConfig = {
         "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "server-rules/necessary.json" },
         "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "server-rules/optional.json" },
-        "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "server-rules/law.json" },
+        "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "law.json" }, // Updated JSON path
         "rights-duties-rules": { title: "Rights & Duties", idPrefix: "SR-RD", json: "server-rules/rights-duties.json" },
         "economy-rules": { title: "Economy", idPrefix: "SR-E", json: "server-rules/economy.json" },
         "jobs-rules": { title: "Jobs", idPrefix: "SR-J", json: "server-rules/jobs.json" },
@@ -25,18 +25,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            
-            // This is the key change to handle the "content" array
+
+            // Correctly process JSON with "content" array
             if (data && Array.isArray(data)) {
                 let ruleCounter = 1;
                 return data.map(group => {
                     const rulesSource = group.rules || group.content || [];
                     const newRules = rulesSource.map(rule => {
                         const code = `${config.idPrefix}${ruleCounter}`;
-                        const page = Math.ceil(ruleCounter / 20); // Example: 20 rules per page
                         ruleCounter++;
+                        const page = Math.ceil(ruleCounter / 20); // Example: 20 rules per page
                         return { ...rule, code, page };
                     });
+                    // Return a consistent structure
                     return { title: group.title, rules: newRules };
                 });
             } else {
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+
     // Get all necessary DOM elements
     const mainSelection = document.getElementById('main-selection');
     const serverRulesSelection = document.getElementById('server-rules-selection');
@@ -58,7 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const localSearchBox = document.getElementById('local-search-box');
     const localSearchButton = document.getElementById('local-search-button');
     const controlsContainer = document.getElementById('controls-container');
-    const paginationButtonsContainer = document.getElementById('pagination-buttons');
+    const paginationButtonsContainerTop = document.getElementById('pagination-buttons-top');
+    const paginationButtonsContainerBottom = document.getElementById('pagination-buttons-bottom');
     const backButtons = document.querySelectorAll('.back-button');
     const subCategoryBoxes = document.querySelectorAll('#server-rules-selection .rules-box, #govt-rules-selection .rules-box');
 
@@ -122,35 +125,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to update the page navigation buttons
     function updatePaginationButtons() {
-        paginationButtonsContainer.innerHTML = '';
+        paginationButtonsContainerTop.innerHTML = '';
+        paginationButtonsContainerBottom.innerHTML = '';
+        
         if (totalPages <= 1) {
             return;
         }
-        const prevButton = document.createElement('button');
-        prevButton.textContent = '← Prev';
-        prevButton.classList.add('page-button', 'rounded-md', currentPage === 1 ? 'inactive' : 'active');
-        prevButton.disabled = currentPage === 1;
-        prevButton.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderRulesForPage(currentCategoryData);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        });
-        paginationButtonsContainer.appendChild(prevButton);
+        
+        // Create buttons
+        const createButtons = () => {
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '← Prev';
+            prevButton.classList.add('page-button', 'rounded-md', currentPage === 1 ? 'inactive' : 'active');
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderRulesForPage(currentCategoryData);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
 
-        const nextButton = document.createElement('button');
-        nextButton.textContent = 'Next →';
-        nextButton.classList.add('page-button', 'rounded-md', currentPage === totalPages ? 'inactive' : 'active');
-        nextButton.disabled = currentPage === totalPages;
-        nextButton.addEventListener('click', () => {
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderRulesForPage(currentCategoryData);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        });
-        paginationButtonsContainer.appendChild(nextButton);
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'Next →';
+            nextButton.classList.add('page-button', 'rounded-md', currentPage === totalPages ? 'inactive' : 'active');
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderRulesForPage(currentCategoryData);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+            return { prevButton, nextButton };
+        };
+
+        const topButtons = createButtons();
+        paginationButtonsContainerTop.appendChild(topButtons.prevButton);
+        paginationButtonsContainerTop.appendChild(topButtons.nextButton);
+        
+        const bottomButtons = createButtons();
+        paginationButtonsContainerBottom.appendChild(bottomButtons.prevButton);
+        paginationButtonsContainerBottom.appendChild(bottomButtons.nextButton);
     }
 
     // Handle main category button clicks (Server Rules, Government Rules)
@@ -239,10 +255,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (!currentCategoryData) {
+             dynamicRulesContent.innerHTML = `<p class="error-message">Please select a category first to perform a search.</p>`;
+             return;
+        }
+
         const searchResults = currentCategoryData.flatMap(group =>
             (group.rules || []).filter(rule =>
-                rule.shortDescription.toLowerCase().includes(query) ||
-                rule.longDescription.toLowerCase().includes(query) ||
+                (rule.shortDescription && rule.shortDescription.toLowerCase().includes(query)) ||
+                (rule.longDescription && rule.longDescription.toLowerCase().includes(query)) ||
                 (rule.code && rule.code.toLowerCase().includes(query))
             )
         );
@@ -284,7 +305,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             dynamicRulesContent.appendChild(ruleItem);
         });
-        paginationButtonsContainer.innerHTML = '';
+        paginationButtonsContainerTop.innerHTML = '';
+        paginationButtonsContainerBottom.innerHTML = '';
     }
 
     localSearchButton.addEventListener('click', performLocalSearch);
