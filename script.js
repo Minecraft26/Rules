@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rulesConfig = {
         "necessary-rules": { title: "Necessary Rules", idPrefix: "SR-N", json: "server-rules/necessary.json" },
         "optional-rules": { title: "Optional Rules", idPrefix: "SR-O", json: "server-rules/optional.json" },
-        "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "law.json" }, // Updated JSON path
+        "law-like-rules": { title: "Law-Like Rules", idPrefix: "SR-L", json: "server-rules/law.json" },
         "rights-duties-rules": { title: "Rights & Duties", idPrefix: "SR-RD", json: "server-rules/rights-duties.json" },
         "economy-rules": { title: "Economy", idPrefix: "SR-E", json: "server-rules/economy.json" },
         "jobs-rules": { title: "Jobs", idPrefix: "SR-J", json: "server-rules/jobs.json" },
@@ -26,15 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const data = await response.json();
 
-            // Correctly process JSON with "content" array
+            // Check if the data is in the expected 'groups' format or the 'law.json' format
             if (data && Array.isArray(data)) {
                 let ruleCounter = 1;
                 return data.map(group => {
-                    const rulesSource = group.rules || group.content || [];
-                    const newRules = rulesSource.map(rule => {
+                    const newRules = (group.rules || group.content || []).map(rule => {
+                        // Dynamically assign code and page, handling the different structures
                         const code = `${config.idPrefix}${ruleCounter}`;
                         ruleCounter++;
-                        const page = Math.ceil(ruleCounter / 20); // Example: 20 rules per page
+                        const page = Math.ceil(ruleCounter / 20); // Example logic for pagination
                         return { ...rule, code, page };
                     });
                     // Return a consistent structure
@@ -60,8 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const localSearchBox = document.getElementById('local-search-box');
     const localSearchButton = document.getElementById('local-search-button');
     const controlsContainer = document.getElementById('controls-container');
-    const paginationButtonsContainerTop = document.getElementById('pagination-buttons-top');
-    const paginationButtonsContainerBottom = document.getElementById('pagination-buttons-bottom');
+    const paginationButtonsContainer = document.getElementById('pagination-buttons');
     const backButtons = document.querySelectorAll('.back-button');
     const subCategoryBoxes = document.querySelectorAll('#server-rules-selection .rules-box, #govt-rules-selection .rules-box');
 
@@ -69,10 +68,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPage = 1;
     let totalPages = 1;
     let currentCategoryData = null;
-    let currentMainCategory = '';
+    let currentMainCategory = ''; // Added
 
     // Function to generate and display rule items for the current page
-    function renderRulesForPage(groupsData) {
+    function renderRulesForPage(groupsData) { // Changed parameter name to groupsData
         dynamicRulesContent.innerHTML = '';
         if (!groupsData || !Array.isArray(groupsData)) {
             dynamicRulesContent.innerHTML = `<p class="error-message">Invalid rule data for this category (expected an array of groups).</p>`;
@@ -91,10 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Create and append a header for the category (using the first group's title for simplicity, or you can adjust)
         const header = document.createElement('div');
-        header.innerHTML = `<h2 class="rules-header">Page ${currentPage} of ${totalPages} - ${groupsData[0].title}</h2>`;
+        header.innerHTML = `<h2 class="rules-header">Page ${currentPage} of ${totalPages} - ${groupsData[0].title}</h2>`; // Using first group's title
         dynamicRulesContent.appendChild(header);
 
+        // Create and append each rule item
         rulesToRender.forEach(rule => {
             const ruleItem = document.createElement('div');
             ruleItem.classList.add('rule-item', 'transition-all', 'duration-300', 'transform', 'hover:scale-101');
@@ -115,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>${rule.longDescription}</p>
                 </div>
             `;
+            // Add accordion-like click event
             ruleItem.addEventListener('click', () => {
                 ruleItem.classList.toggle('active');
             });
@@ -125,48 +127,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to update the page navigation buttons
     function updatePaginationButtons() {
-        paginationButtonsContainerTop.innerHTML = '';
-        paginationButtonsContainerBottom.innerHTML = '';
-        
+        paginationButtonsContainer.innerHTML = '';
         if (totalPages <= 1) {
             return;
         }
-        
-        // Create buttons
-        const createButtons = () => {
-            const prevButton = document.createElement('button');
-            prevButton.textContent = '← Prev';
-            prevButton.classList.add('page-button', 'rounded-md', currentPage === 1 ? 'inactive' : 'active');
-            prevButton.disabled = currentPage === 1;
-            prevButton.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderRulesForPage(currentCategoryData);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-            });
+        const prevButton = document.createElement('button');
+        prevButton.textContent = '← Prev';
+        prevButton.classList.add('page-button', 'rounded-md', currentPage === 1 ? 'inactive' : 'active');
+        prevButton.disabled = currentPage === 1;
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderRulesForPage(currentCategoryData);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+        paginationButtonsContainer.appendChild(prevButton);
 
-            const nextButton = document.createElement('button');
-            nextButton.textContent = 'Next →';
-            nextButton.classList.add('page-button', 'rounded-md', currentPage === totalPages ? 'inactive' : 'active');
-            nextButton.disabled = currentPage === totalPages;
-            nextButton.addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderRulesForPage(currentCategoryData);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-            });
-            return { prevButton, nextButton };
-        };
-
-        const topButtons = createButtons();
-        paginationButtonsContainerTop.appendChild(topButtons.prevButton);
-        paginationButtonsContainerTop.appendChild(topButtons.nextButton);
-        
-        const bottomButtons = createButtons();
-        paginationButtonsContainerBottom.appendChild(bottomButtons.prevButton);
-        paginationButtonsContainerBottom.appendChild(bottomButtons.nextButton);
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Next →';
+        nextButton.classList.add('page-button', 'rounded-md', currentPage === totalPages ? 'inactive' : 'active');
+        nextButton.disabled = currentPage === totalPages;
+        nextButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderRulesForPage(currentCategoryData);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+        paginationButtonsContainer.appendChild(nextButton);
     }
 
     // Handle main category button clicks (Server Rules, Government Rules)
@@ -180,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     subCategoryBoxes.forEach(box => {
-        box.addEventListener('click', async () => {
+        box.addEventListener('click', async () => { // Added async
             const targetId = box.dataset.target;
             const category = box.dataset.category;
             
@@ -191,29 +180,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             currentCategoryId = targetId;
-            currentMainCategory = category;
-            controlsContainer.classList.add('hidden');
-            rulesPageView.classList.add('hidden');
-            dynamicRulesContent.innerHTML = '<p class="loading">Loading rules...</p>';
+            currentMainCategory = category; // Store the main category
+            controlsContainer.classList.add('hidden'); // Hide controls while loading
+            rulesPageView.classList.add('hidden'); // Hide rules view while loading
+            dynamicRulesContent.innerHTML = '<p class="loading">Loading rules...</p>'; // Show loading message
 
-            const fetchedData = await fetchRules(targetId);
+            const fetchedData = await fetchRules(targetId); // Fetch data
 
-            if (fetchedData && Array.isArray(fetchedData)) {
-                currentCategoryData = fetchedData;
+            if (fetchedData && Array.isArray(fetchedData)) { // Check if fetchedData is an array
+                currentCategoryData = fetchedData; // Store the array of groups
+                // Calculate totalPages based on all rules across all groups
                 const allRules = fetchedData.flatMap(group => group.rules || []);
                 const pageNumbers = new Set(allRules.map(rule => rule.page));
                 totalPages = pageNumbers.size;
                 currentPage = 1;
-                renderRulesForPage(currentCategoryData);
+                renderRulesForPage(currentCategoryData); // Pass the array of groups
                 controlsContainer.classList.remove('hidden');
                 rulesPageView.classList.remove('hidden');
             } else {
-                dynamicRulesContent.innerHTML = `<p class="error-message">Failed to load rules for this category. The JSON file might be missing or have an incorrect structure.</p>`;
+                dynamicRulesContent.innerHTML = `<p class="error-message">Failed to load rules for this category. The JSON file might be missing, have an incorrect structure (expected an array of rule groups), or contain no rules.</p>`;
                 rulesPageView.classList.remove('hidden');
                 controlsContainer.classList.remove('hidden');
             }
-            localSearchBox.value = '';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            localSearchBox.value = ''; // Clear search box on new category selection
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
         });
     });
 
@@ -221,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
     backButtons.forEach(button => {
         button.addEventListener('click', () => {
             const target = button.dataset.target;
-            localSearchBox.value = '';
+            localSearchBox.value = ''; // Clear search box on back button
             if (target === 'main-selection') {
                 serverRulesSelection.classList.add('hidden');
                 govtRulesSelection.classList.add('hidden');
@@ -247,6 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function performLocalSearch() {
         const query = localSearchBox.value.toLowerCase().trim();
         if (query === '') {
+            // Go back to the main category view if search is empty
             rulesPageView.classList.add('hidden');
             serverRulesSelection.classList.add('hidden');
             govtRulesSelection.classList.add('hidden');
@@ -255,19 +246,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (!currentCategoryData) {
-             dynamicRulesContent.innerHTML = `<p class="error-message">Please select a category first to perform a search.</p>`;
-             return;
-        }
-
+        // Filter rules based on the search query across all groups in the current category
         const searchResults = currentCategoryData.flatMap(group =>
             (group.rules || []).filter(rule =>
-                (rule.shortDescription && rule.shortDescription.toLowerCase().includes(query)) ||
-                (rule.longDescription && rule.longDescription.toLowerCase().includes(query)) ||
-                (rule.code && rule.code.toLowerCase().includes(query))
+                rule.shortDescription.toLowerCase().includes(query) ||
+                rule.longDescription.toLowerCase().includes(query) ||
+                (rule.code && rule.code.toLowerCase().includes(query)) // Add a check for the code
             )
         );
         
+        // Display results and hide all category selections
         serverRulesSelection.classList.add('hidden');
         govtRulesSelection.classList.add('hidden');
         mainSelection.classList.add('hidden');
@@ -280,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Display search results
         searchResults.forEach(rule => {
             const ruleItem = document.createElement('div');
             ruleItem.classList.add('rule-item', 'transition-all', 'duration-300', 'transform', 'hover:scale-101');
@@ -300,13 +289,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p>${rule.longDescription}</p>
                     </div>
                 `;
+            // Add accordion-like click event
             ruleItem.addEventListener('click', () => {
                 ruleItem.classList.toggle('active');
             });
             dynamicRulesContent.appendChild(ruleItem);
         });
-        paginationButtonsContainerTop.innerHTML = '';
-        paginationButtonsContainerBottom.innerHTML = '';
+        paginationButtonsContainer.innerHTML = ''; // Hide pagination for search results
     }
 
     localSearchButton.addEventListener('click', performLocalSearch);
