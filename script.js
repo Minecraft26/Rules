@@ -60,7 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const localSearchBox = document.getElementById('local-search-box');
     const localSearchButton = document.getElementById('local-search-button');
     const controlsContainer = document.getElementById('controls-container');
-    const paginationButtonsContainer = document.getElementById('pagination-buttons');
+    const paginationButtonsContainerTop = document.getElementById('pagination-buttons-top');
+    const paginationButtonsContainerBottom = document.getElementById('pagination-buttons-bottom');
     const backButtons = document.querySelectorAll('.back-button');
     const subCategoryBoxes = document.querySelectorAll('#server-rules-selection .rules-box, #govt-rules-selection .rules-box');
 
@@ -127,35 +128,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to update the page navigation buttons
     function updatePaginationButtons() {
-        paginationButtonsContainer.innerHTML = '';
-        if (totalPages <= 1) {
-            return;
-        }
-        const prevButton = document.createElement('button');
-        prevButton.textContent = '← Prev';
-        prevButton.classList.add('page-button', 'rounded-md', currentPage === 1 ? 'inactive' : 'active');
-        prevButton.disabled = currentPage === 1;
-        prevButton.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderRulesForPage(currentCategoryData);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        });
-        paginationButtonsContainer.appendChild(prevButton);
+        const containers = [paginationButtonsContainerTop, paginationButtonsContainerBottom];
+        
+        containers.forEach(container => {
+            if (!container) return;
+            container.innerHTML = ''; // Clear existing buttons
+            
+            if (totalPages > 1) {
+                const prevButton = document.createElement('button');
+                prevButton.textContent = '← Prev';
+                prevButton.classList.add('page-button', 'rounded-md', currentPage === 1 ? 'inactive' : 'active');
+                prevButton.disabled = currentPage === 1;
+                prevButton.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderRulesForPage(currentCategoryData);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
 
-        const nextButton = document.createElement('button');
-        nextButton.textContent = 'Next →';
-        nextButton.classList.add('page-button', 'rounded-md', currentPage === totalPages ? 'inactive' : 'active');
-        nextButton.disabled = currentPage === totalPages;
-        nextButton.addEventListener('click', () => {
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderRulesForPage(currentCategoryData);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const nextButton = document.createElement('button');
+                nextButton.textContent = 'Next →';
+                nextButton.classList.add('page-button', 'rounded-md', currentPage === totalPages ? 'inactive' : 'active');
+                nextButton.disabled = currentPage === totalPages;
+                nextButton.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderRulesForPage(currentCategoryData);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+
+                container.appendChild(prevButton);
+                container.appendChild(nextButton);
             }
         });
-        paginationButtonsContainer.appendChild(nextButton);
     }
 
     // Handle main category button clicks (Server Rules, Government Rules)
@@ -295,7 +302,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             dynamicRulesContent.appendChild(ruleItem);
         });
-        paginationButtonsContainer.innerHTML = ''; // Hide pagination for search results
+        paginationButtonsContainerTop.innerHTML = ''; // Hide pagination for search results
+        paginationButtonsContainerBottom.innerHTML = ''; // Hide pagination for search results
     }
 
     localSearchButton.addEventListener('click', performLocalSearch);
